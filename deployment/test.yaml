@@ -1,4 +1,7 @@
-
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Version:
+    Type: String
 Description: "Basic NotebookInstance test"
 Resources:
   BasicNotebookInstance:
@@ -10,33 +13,21 @@ Resources:
   BasicNotebookInstanceLifecycleConfig:
     Type: "AWS::SageMaker::NotebookInstanceLifecycleConfig"
     Properties:
-      OnCreate:
-        - Content:
-            Fn::Base64: |
-              set -e
-              # perform following actions as ec2-user
-              sudo -u ec2-user -i <<EOF
-              # cd /home/ec2-user/SageMaker
-              # copy source files
-              # aws s3 sync s3://test-asc-sagemaker-fraud/source .
-              # Replace placeholders
-              # cd /home/ec2-user/SageMaker/notebooks
-              # sed -s -i 's/HUB_1P_IMAGE/conda_python3/g' *.ipynb
-              EOF
       OnStart:
         - Content:
-            Fn::Base64: |
-              #!/bin/bash
-              set -e
-              # perform following actions as ec2-user
-              sudo -u ec2-user -i <<EOF
-              cd /home/ec2-user/SageMaker
-              # copy source files
-              aws s3 sync s3://test-asc-sagemaker-fraud/source .
-              # upgrade packages
-              pip install --upgrade sagemaker
-              echo "OnStart script completed!"
-              EOF
+            Fn::Base64: !Sub
+              - |
+                #!/bin/bash
+                set -e
+                # perform following actions as ec2-user
+                sudo -u ec2-user -i <<EOF
+                cd /home/ec2-user/SageMaker
+                # copy source files
+                aws s3 sync s3://test-asc-sagemaker-fraud/source/Fraud_Detection_${VERSION}.ipynb .
+                # upgrade packages
+                pip install --upgrade sagemaker
+                echo "OnStart script completed!"
+                EOF
           
   ExecutionRole: 
     Type: "AWS::IAM::Role"
