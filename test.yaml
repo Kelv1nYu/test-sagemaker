@@ -1,0 +1,73 @@
+
+Description: "Basic NotebookInstance test"
+Resources:
+  BasicNotebookInstance:
+    Type: "AWS::SageMaker::NotebookInstance"
+    Properties:
+      InstanceType: "ml.t2.medium"
+      RoleArn: !GetAtt ExecutionRole.Arn
+      LifecycleConfigName: !GetAtt BasicNotebookInstanceLifecycleConfig.NotebookInstanceLifecycleConfigName
+  BasicNotebookInstanceLifecycleConfig:
+    Type: "AWS::SageMaker::NotebookInstanceLifecycleConfig"
+    Properties:
+      OnCreate:
+        - Content:
+            Fn::Base64: |
+              set -e
+              # perform following actions as ec2-user
+              sudo -u ec2-user -i <<EOF
+              cd /home/ec2-user/SageMaker
+              # copy source files
+              aws s3 sync s3://test-asc-sagemaker-fraud/source .
+              # Replace placeholders
+              cd /home/ec2-user/SageMaker/notebooks
+              sed -s -i 's/HUB_1P_IMAGE/conda_python3/g' *.ipynb
+              EOF
+      OnStart:
+        - Content:
+            Fn::Base64: |
+              #!/bin/bash
+              set -e
+              # perform following actions as ec2-user
+              sudo -u ec2-user -i <<EOF
+              # upgrade packages
+              pip install --upgrade sagemaker
+              echo "OnStart script completed!"
+              EOF
+          
+  ExecutionRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "sagemaker.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSageMakerFullAccess"
+      Policies: 
+        - 
+          PolicyName: "test-sagemaker-s3-kelvin"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Effect: "Allow"
+                Action: 
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:DeleteObject"
+                  - "s3:ListBucket"
+                Resource: "arn:aws:s3:::*"
+
+Outputs:
+  BasicNotebookInstanceId:
+    Value: !Ref BasicNotebookInstance
+  BasicNotebookInstanceLifecycleConfigId:
+    Value: !Ref BasicNotebookInstanceLifecycleConfig
