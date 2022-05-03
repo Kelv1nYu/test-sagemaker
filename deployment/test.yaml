@@ -23,7 +23,7 @@ Resources:
                 sudo -u ec2-user -i <<EOF
                 cd /home/ec2-user/SageMaker
                 # copy source files
-                aws s3 sync s3://test-asc-sagemaker-fraud/source/Fraud_Detection_${VERSION}.ipynb .
+                aws s3 sync s3://test-asc-sagemaker-fraud/source/Fraud_Detection_${Version}.ipynb .
                 # upgrade packages
                 pip install --upgrade sagemaker
                 echo "OnStart script completed!"
