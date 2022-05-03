@@ -3,6 +3,10 @@ Parameters:
   Version:
     Type: String
 Description: "Basic NotebookInstance test"
+Mappings:
+  SolutionsS3BucketName:
+    development:
+      Prefix: test-asc-sagemaker-fraud
 Resources:
   BasicNotebookInstance:
     Type: "AWS::SageMaker::NotebookInstance"
@@ -22,11 +26,13 @@ Resources:
                 sudo -u ec2-user -i <<EOF
                 cd /home/ec2-user/SageMaker
                 # copy source files
-                aws s3 sync s3://test-asc-sagemaker-fraud/source/Fraud_Detection_${Version}.ipynb .
+                aws s3 sync s3://${SolutionsS3BucketNamePrefix}/source/Fraud_Detection_${Version}.ipynb .
                 # upgrade packages
                 pip install --upgrade sagemaker
                 echo "OnStart script completed!"
                 EOF
+              - SolutionsS3BucketNamePrefix:
+                  Fn::FindInMap: [SolutionsS3BucketName, development, Prefix]
           
   ExecutionRole: 
     Type: "AWS::IAM::Role"
