@@ -23,7 +23,7 @@ Resources:
               - |
                 set -e
                 # perform following actions as ec2-user
-                sudo -u ec2-user -i <<EOF
+                # sudo -u ec2-user -i <<EOF
                 cd /home/ec2-user/SageMaker
                 # copy source files
                 aws s3 sync s3://${SolutionsS3BucketNamePrefix}/source/Fraud_Detection_${Version}.ipynb .
