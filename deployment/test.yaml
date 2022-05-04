@@ -21,12 +21,14 @@ Resources:
         - Content:
             Fn::Base64: !Sub
               - |
+                #!/bin/bash
                 set -e
                 # perform following actions as ec2-user
-                sudo -u ec2-user -i <<EOF
-                cd /home/ec2-user/SageMaker
+                sudo -u ec2-user -i <<'EOF'
+                cd /home/ec2-user/SageMaker/
+                ls -a
                 # copy source files
-                aws s3 sync s3://${SolutionsS3BucketNamePrefix}/source/Fraud_Detection_${Version}.ipynb .
+                aws s3 cp s3://${SolutionsS3BucketNamePrefix}/source/Fraud_Detection_${Version}.ipynb Fraud_Detection_${Version}.ipynb
                 # Replace placeholders
                 cd /home/ec2-user/SageMaker/notebooks
                 sed -s -i 's/HUB_1P_IMAGE/conda_python3/g' *.ipynb
