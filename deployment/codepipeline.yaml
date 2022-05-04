@@ -1,0 +1,109 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation template to create codebuild and codepipeline for backend
+Parameters:
+  SecurityStack:
+    Description: Name of an active CloudFormation stack that contains all roles and SGs resources
+    Type: String
+  Environment:
+    Description: In which environment will this template be running
+    Type: String
+    AllowedValues:
+      - staging
+      - prod
+      - test
+  GitHubRepoName:
+    Description: repo name
+    Type: String
+    Default: "test-sagemaker"
+  GitHubOwner:
+    Description: github repository owner
+    Type: String
+    Default: "Kelv1nYu"
+
+Mappings:
+  Map:
+    test:
+      Branch: main
+      S3: test-asc-sagemaker-fraud
+
+Resources:
+  BuildAndDeploy:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: no_artifacts
+      Description: Build and Deploy sagemaker notebook instance
+      Environment: 
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Type: LINUX_CONTAINER
+      ServiceRole: 
+        Fn::ImportValue: !Sub ${SecurityStack}-CodeBuildRole
+      Source: 
+        BuildSpec: |
+          version: 0.2
+
+          env:
+            git-credential-helper: yes
+          phases:
+            install:
+              runtime-versions:
+                python: 3.8
+            pre_build:
+              commands:
+                - if [ -z "$CODEBUILD_RESOLVED_SOURCE_VERSION" ]; then SRC_HASH=${CODEBUILD_SOURCE_VERSION}; else SRC_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION}; fi
+                - VERSION=$(echo ${SRC_HASH} | cut -b 1-8)
+            build:
+              commands:
+                - git log | head -100
+                - git log --name-only --oneline
+                - aws cloudformation deploy --template-file ./deployment/test.yaml --stack-name test-sagemaker-cicd --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Version=${VERSION}
+           
+        GitCloneDepth: 1
+        Location: !Join [ "/", [ "https://github.com",!Ref GitHubOwner, !Ref GitHubRepoName ] ]
+        Type: GITHUB
+
+  CodeStarConnection:
+    Type: 'AWS::CodeStarConnections::Connection'
+    Properties:
+      ConnectionName: MyGitHubConnection
+      ProviderType: GitHub
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: 
+        Fn::ImportValue: !Sub ${SecurityStack}-CodePipelineRole
+      ArtifactStore:
+        Type: S3
+        Location: !FindInMap [Map, !Ref Environment, S3]
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId: 
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: 1
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnection
+                FullRepositoryId: !Join ['/', [!Ref GitHubOwner, !Ref GitHubRepoName]]
+                BranchName: !FindInMap [Map, !Ref Environment, Branch]
+                OutputArtifactFormat: CODEBUILD_CLONE_REF
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: BuildAndDeploy
+              ActionTypeId: 
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref BuildAndDeploy
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
