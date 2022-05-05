@@ -56,7 +56,9 @@ Resources:
                 - VERSION=$(echo ${SRC_HASH} | cut -b 1-8)
             build:
               commands:
+                - echo $VERSION
                 - sh ./check.sh
+                - echo $VERSION
                 - aws cloudformation deploy --template-file ./deployment/test.yaml --stack-name test-sagemaker-cicd --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Version=${VERSION}
            
         GitCloneDepth: 1
