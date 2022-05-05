@@ -29,9 +29,6 @@ Resources:
                 ls -a
                 # copy source files
                 aws s3 cp s3://${SolutionsS3BucketNamePrefix}/source/Fraud_Detection_${Version}.ipynb Fraud_Detection_${Version}.ipynb
-                # Replace placeholders
-                cd /home/ec2-user/SageMaker/notebooks
-                sed -s -i 's/HUB_1P_IMAGE/conda_python3/g' *.ipynb
                 # upgrade packages
                 pip install --upgrade sagemaker
                 echo "OnStart script completed!"
