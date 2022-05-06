@@ -36,6 +36,9 @@ Resources:
         Type: no_artifacts
       Description: Build and Deploy sagemaker notebook instance
       Environment: 
+        EnvironmentVariables:
+          - Name: NN
+            Value: !FindInMap [Map, !Ref Environment, InstanceName]
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
         Type: LINUX_CONTAINER
@@ -57,35 +60,7 @@ Resources:
                 - VERSION=$(echo ${SRC_HASH} | cut -b 1-8)
             build:
               commands:
-                - sh ./check.sh
-           
-        GitCloneDepth: 1
-        Location: !Join [ "/", [ "https://github.com",!Ref GitHubOwner, !Ref GitHubRepoName ] ]
-        Type: GITHUB
-  RestartInstance:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Artifacts:
-        Type: no_artifacts
-      Description: Build and Deploy sagemaker notebook instance
-      Environment: 
-        EnvironmentVariables:
-          - Name: NN
-            Value: !FindInMap [Map, !Ref Environment, InstanceName]
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
-        Type: LINUX_CONTAINER
-      ServiceRole: 
-        Fn::ImportValue: !Sub ${SecurityStack}-CodeBuildRole
-      Source: 
-        BuildSpec: |
-          version: 0.2
-            build:
-              commands:
-                - aws sagemaker stop-notebook-instance --notebook-instance-name ${NN}
-                - aws sagemaker wait notebook-instance-stopped --notebook-instance-name ${NN}
-                - aws sagemaker start-notebook-instance --notebook-instance-name ${NN}
-                - aws sagemaker wait notebook-instance-in-service --notebook-instance-name ${NN}
+                - sh ./deploy.sh ${NN}
            
         GitCloneDepth: 1
         Location: !Join [ "/", [ "https://github.com",!Ref GitHubOwner, !Ref GitHubRepoName ] ]
@@ -134,18 +109,5 @@ Resources:
               InputArtifacts:
                 - Name: SourceArtifact
               OutputArtifacts:
-                - Name: DeployedArtifact
-              RunOrder: 1
-        - Name: Restart
-          Actions:
-            - Name: RestartInstance
-              ActionTypeId: 
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: 1
-              Configuration:
-                ProjectName: !Ref RestartInstance
-              InputArtifacts:
                 - Name: DeployedArtifact
               RunOrder: 1
