@@ -18,7 +18,7 @@ else
     aws s3 cp ./source/Fraud_Detection.ipynb s3://test-asc-sagemaker-fraud/source/Fraud_Detection_${VERSION}.ipynb
 fi
 
-if [[ $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE --region us-west-2 | grep 'test-sagemaker-cicd') ]]; then
+if [[ $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE | grep 'test-sagemaker-cicd') ]] || [[$(aws cloudformation list-stacks --stack-status-filter UPDATE_COMPLETE | grep 'test-sagemaker-cicd')]]; then
     echo 'Updating Stack...'
     aws cloudformation deploy --template-file ./deployment/test.yaml --stack-name test-sagemaker-cicd --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Version=${VERSION}
     if [ "$?" -eq 255 ]; then
