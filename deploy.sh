@@ -33,8 +33,10 @@ if [[ $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE --r
 
             exit ${status}
         fi
+        echo "Stopping notbook instance..."
         aws sagemaker stop-notebook-instance --notebook-instance-name $1
         aws sagemaker wait notebook-instance-stopped --notebook-instance-name $1
+        echo "Starting notbook instance..."
         aws sagemaker start-notebook-instance --notebook-instance-name $1
         aws sagemaker wait notebook-instance-in-service --notebook-instance-name $1
     fi
