@@ -1,6 +1,6 @@
 # !/bin/bash
 
-if [[ $(aws s3 ls s3://test-asc-sagemaker-fraud/source/ | grep 'Fraud_Detection') ]]; then 
+if $(aws s3 ls s3://test-asc-sagemaker-fraud/source/ | grep -q 'Fraud_Detection'); then 
     OBJECT="$(aws s3 ls s3://test-asc-sagemaker-fraud/source/ --recursive | sort | tail -n 1 | awk '{print $4}')"
     aws s3 cp s3://test-asc-sagemaker-fraud/$OBJECT ./$OBJECT
     file1="./source/Fraud_Detection.ipynb"
@@ -18,7 +18,7 @@ else
     aws s3 cp ./source/Fraud_Detection.ipynb s3://test-asc-sagemaker-fraud/source/Fraud_Detection_${VERSION}.ipynb
 fi
 
-if [[ $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE | grep 'test-sagemaker-cicd') ]] || [[$(aws cloudformation list-stacks --stack-status-filter UPDATE_COMPLETE | grep 'test-sagemaker-cicd')]]; then
+if $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE --region us-west-2 | grep -q 'test-sagemaker-cicd') || $(aws cloudformation list-stacks --stack-status-filter UPDATE_COMPLETE --region us-west-2 | grep -q 'test-sagemaker-cicd' | head); then
     echo 'Updating Stack...'
     aws cloudformation deploy --template-file ./deployment/test.yaml --stack-name test-sagemaker-cicd --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Version=${VERSION}
     if [ "$?" -eq 255 ]; then
