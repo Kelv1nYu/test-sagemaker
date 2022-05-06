@@ -11,6 +11,7 @@ Resources:
   BasicNotebookInstance:
     Type: "AWS::SageMaker::NotebookInstance"
     Properties:
+      NotebookInstanceName: "test-sagemaker-cicd"
       InstanceType: "ml.t2.medium"
       RoleArn: !GetAtt ExecutionRole.Arn
       LifecycleConfigName: !GetAtt BasicNotebookInstanceLifecycleConfig.NotebookInstanceLifecycleConfigName
@@ -70,5 +71,7 @@ Resources:
 Outputs:
   BasicNotebookInstanceId:
     Value: !Ref BasicNotebookInstance
+  BasicNotebookInstanceName:
+    Value: !GetAtt BasicNotebookInstance.NotebookInstanceName
   BasicNotebookInstanceLifecycleConfigId:
     Value: !Ref BasicNotebookInstanceLifecycleConfig
