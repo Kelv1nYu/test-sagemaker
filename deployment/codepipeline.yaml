@@ -133,6 +133,8 @@ Resources:
                 ProjectName: !Ref BuildAndDeploy
               InputArtifacts:
                 - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: DeployedArtifact
               RunOrder: 1
         - Name: Restart
           Actions:
@@ -144,4 +146,6 @@ Resources:
                 Version: 1
               Configuration:
                 ProjectName: !Ref RestartInstance
+              InputArtifacts:
+                - Name: DeployedArtifact
               RunOrder: 1
