@@ -21,18 +21,23 @@ fi
 if [[ $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE --region us-west-2 | grep 'test-sagemaker-cicd') ]]; then
     echo 'Updating Stack...'
     aws cloudformation deploy --template-file ./deployment/test.yaml --stack-name test-sagemaker-cicd --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Version=${VERSION}
-    aws cloudformation wait stack-update-complete --stack-name test-sagemaker-cicd
-    status=$?
-    if [[ ${status} -ne 0 ]] ; then
-        # Waiter encountered a failure state.
-        echo "Stack creation failed. AWS error code is ${status}."
+    if [ "$?" -eq 255 ]; then
+        echo "No changes to deploy."
+        exit 0;
+    else
+        aws cloudformation wait stack-update-complete --stack-name test-sagemaker-cicd
+        status=$?
+        if [[ ${status} -ne 0 ]] ; then
+            # Waiter encountered a failure state.
+            echo "Stack update failed. AWS error code is ${status}."
 
-        exit ${status}
+            exit ${status}
+        fi
+        aws sagemaker stop-notebook-instance --notebook-instance-name $1
+        aws sagemaker wait notebook-instance-stopped --notebook-instance-name $1
+        aws sagemaker start-notebook-instance --notebook-instance-name $1
+        aws sagemaker wait notebook-instance-in-service --notebook-instance-name $1
     fi
-    aws sagemaker stop-notebook-instance --notebook-instance-name $1
-    aws sagemaker wait notebook-instance-stopped --notebook-instance-name $1
-    aws sagemaker start-notebook-instance --notebook-instance-name $1
-    aws sagemaker wait notebook-instance-in-service --notebook-instance-name $1;
 else
     echo 'Creating Stack...'
     aws cloudformation deploy --template-file ./deployment/test.yaml --stack-name test-sagemaker-cicd --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Version=${VERSION}
