@@ -60,6 +60,7 @@ Resources:
                 - VERSION=$(echo ${SRC_HASH} | cut -b 1-8)
             build:
               commands:
+                - pip3 install awscli --upgrade --user
                 - sh ./deploy.sh ${NN}
            
         GitCloneDepth: 1
